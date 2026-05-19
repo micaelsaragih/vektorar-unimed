@@ -11,17 +11,18 @@ import { LandingPage } from './landing/LandingPage.js';
 // ─── Bootstrap ───────────────────────────────────────────
 
 const engine = new Engine(document.body);
-
-// Enable WebXR
-engine.enableXR();
+console.log('[Startup] renderer initialized');
 
 // Create and initialize the vector scene
 const vectorScene = new VectorScene(engine);
 vectorScene.init();
+console.log('[Startup] scene initialized');
+console.log('[Startup] controls initialized'); // Controls are initialized in vectorScene.init()
 
 // Build Landing Page
 const landing = new LandingPage(engine, vectorScene);
 landing.build();
+console.log('[Startup] UI initialized');
 
 // Loading Sequence
 const loadingScreen = document.getElementById('loading-screen');
@@ -39,11 +40,18 @@ const interval = setInterval(() => {
   if (progress > 70) loadingText.textContent = 'Menyiapkan WebXR...';
 }, 100);
 
-// Wait for fonts and complete loading
-Promise.all([
+// Wait for fonts and complete loading with a strict timeout protection
+const loadingCompletion = Promise.all([
   document.fonts.ready,
   new Promise(resolve => setTimeout(resolve, 800)) // ensure minimum display time
-]).then(() => {
+]);
+
+const timeoutProtection = new Promise(resolve => setTimeout(() => {
+  console.warn('[Startup] Loading timeout reached. Forcing startup completion.');
+  resolve();
+}, 5000)); // 5 second maximum loading time
+
+Promise.race([loadingCompletion, timeoutProtection]).then(() => {
   clearInterval(interval);
   loadingBar.style.width = '100%';
   loadingText.textContent = 'Siap!';
@@ -55,8 +63,22 @@ Promise.all([
       // Start rendering in background with autoRotate
       vectorScene.getCameraController().setAutoRotate(true);
       engine.start();
+      console.log('[Startup] app fully loaded');
+
+      // Initialize AR safely after main startup is complete
+      setTimeout(() => {
+        vectorScene.initializeARSafe().then(() => {
+          console.log('[Startup] WebXR initialized');
+        });
+      }, 1000);
     }, 800);
   }, 400);
+}).catch((err) => {
+  console.error('[Startup] Loading error:', err);
+  // Fallback to ensure we never freeze
+  loadingScreen.style.display = 'none';
+  engine.start();
+  console.log('[Startup] app fully loaded (fallback)');
 });
 
 // Presentation Mode Logic

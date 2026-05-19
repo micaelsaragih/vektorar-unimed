@@ -20,9 +20,6 @@ export class ARSessionManager {
     this._overlayElement = options.overlayElement || null;
     this._onSessionStart = options.onSessionStart || null;
     this._onSessionEnd = options.onSessionEnd || null;
-
-    // Enable XR on the renderer
-    this._renderer.xr.enabled = true;
   }
 
   /**

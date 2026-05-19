@@ -55,7 +55,6 @@ export class VectorScene {
     this._setupGrid();
     this._setupExampleVectors();
     this._setupOperations();
-    this._setupAR();
     this._setupEnhancedLighting();
     this._registerUpdateLoop();
   }
@@ -96,6 +95,39 @@ export class VectorScene {
     this._operationManager = new OperationManager(this._arRoot, this._vectorFactory);
     this._tutorialManager = new TutorialManager(this._operationManager);
     this._controlPanel = new ControlPanel(this._operationManager, this._vectorFactory, this._tutorialManager);
+  }
+
+  async initializeARSafe() {
+    try {
+      if (!('xr' in navigator)) {
+        console.warn('[WebXR] navigator.xr not found, skipping AR init.');
+        return;
+      }
+      
+      // Defensively check for immersive-ar support with timeout to prevent Android freeze
+      const supportPromise = navigator.xr.isSessionSupported('immersive-ar');
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000));
+      
+      let supported = false;
+      try {
+        supported = await Promise.race([supportPromise, timeoutPromise]);
+      } catch (e) {
+        console.warn('[WebXR] Support check timed out or failed:', e);
+      }
+      
+      if (!supported) {
+        console.warn('[WebXR] immersive-ar not supported or rejected.');
+        // Even if not supported, we can initialize the button to show "AR NOT SUPPORTED"
+      }
+
+      this._setupAR();
+      
+      // Finally enable renderer xr AFTER it's safe
+      this._engine.enableXR();
+      
+    } catch (e) {
+      console.error('[WebXR] Fatal error during AR initialization:', e);
+    }
   }
 
   _setupAR() {
