@@ -3,9 +3,13 @@
  * Manages desktop camera interaction using Three.js OrbitControls.
  * Features smooth damping, limits optimized for mathematical visualization,
  * and AR state awareness (disables controls when in WebXR mode).
+ *
+ * Mobile-optimized: higher damping, reduced touch sensitivity,
+ * mobile-safe update frequency.
  */
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { isMobile } from '../core/MobileDetect.js';
 
 export class CameraController {
   /**
@@ -15,29 +19,39 @@ export class CameraController {
   constructor(camera, domElement) {
     this._camera = camera;
     this._controls = new OrbitControls(camera, domElement);
+    this._isMobile = isMobile();
     
     this._configureControls();
   }
 
   /**
    * Configure OrbitControls with settings optimized for 3D math visualization.
+   * Mobile: higher damping for smoother feel, reduced sensitivity.
    */
   _configureControls() {
-    // Damping (smooth inertia)
+    // Damping (smooth inertia) — higher on mobile for smoother feel
     this._controls.enableDamping = true;
-    this._controls.dampingFactor = 0.05;
+    this._controls.dampingFactor = this._isMobile ? 0.12 : 0.05;
 
-    // Speeds
-    this._controls.rotateSpeed = 0.65;
-    this._controls.zoomSpeed = 0.8;
-    this._controls.panSpeed = 0.5;
+    // Speeds — reduced on mobile for precision touch control
+    this._controls.rotateSpeed = this._isMobile ? 0.45 : 0.65;
+    this._controls.zoomSpeed = this._isMobile ? 0.6 : 0.8;
+    this._controls.panSpeed = this._isMobile ? 0.35 : 0.5;
 
     // Distance Limits
-    this._controls.minDistance = 1.5;
-    this._controls.maxDistance = 25;
+    this._controls.minDistance = this._isMobile ? 2.5 : 1.5;
+    this._controls.maxDistance = this._isMobile ? 18 : 25;
 
     // Angle Limits (prevent going too far below the grid)
     this._controls.maxPolarAngle = Math.PI * 0.85;
+
+    // Mobile: enable touch gestures explicitly
+    if (this._isMobile) {
+      this._controls.touches = {
+        ONE: 0, // ROTATE
+        TWO: 2, // DOLLY_PAN
+      };
+    }
 
     // Default target focused slightly above the origin
     this._controls.target.set(0, 0.5, 0);
@@ -66,11 +80,12 @@ export class CameraController {
 
   /**
    * Enable cinematic auto-rotation for landing page/showcase.
+   * Slower on mobile to reduce GPU load.
    * @param {boolean} enabled 
    */
   setAutoRotate(enabled) {
     this._controls.autoRotate = enabled;
-    this._controls.autoRotateSpeed = 1.5;
+    this._controls.autoRotateSpeed = this._isMobile ? 0.8 : 1.5;
   }
 
   /**

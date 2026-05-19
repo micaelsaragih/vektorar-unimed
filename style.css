@@ -1032,17 +1032,48 @@ button {
 }
 
 /* ═══════════════════════════════════════════════
+   BUTTON LOADING SPINNER (Progressive Init)
+   ═══════════════════════════════════════════════ */
+
+.btn-loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: btnSpin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
+}
+
+.btn-primary:disabled {
+  opacity: 0.85;
+  cursor: wait;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* ═══════════════════════════════════════════════
-   MOBILE RESPONSIVE (PHASE 4 REFINEMENT)
+   MOBILE RESPONSIVE (PHASE 5 — GPU OPTIMIZED)
    ═══════════════════════════════════════════════ */
 
 @media (max-width: 850px) {
   /* 1. Header Optimization */
   #app-header {
     padding: 0.6rem 1rem;
-    background: linear-gradient(to bottom, rgba(11, 17, 32, 0.8) 0%, transparent 100%);
+    background: linear-gradient(to bottom, rgba(11, 17, 32, 0.85) 0%, transparent 100%);
   }
-  #app-header::before { height: 70px; }
+  /* CRITICAL: Remove backdrop-filter from header on mobile — massive GPU savings */
+  #app-header::before {
+    height: 70px;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: linear-gradient(to bottom, rgba(11, 17, 32, 0.7) 0%, rgba(11, 17, 32, 0) 100%);
+  }
   .header__logo-img { height: 32px; }
   .header__logo { font-size: 1rem; }
   .header__title { font-size: 0.65rem; }
@@ -1050,11 +1081,26 @@ button {
   .header__btn-presentation span { display: none; }
   .header__btn-presentation { padding: 0.45rem; border-radius: var(--r-md); }
 
-  /* Reduce performance cost of blur on mobile */
-  #control-panel, #explanation-panel, #ar-info-panel, #ARButton {
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    background: rgba(15, 20, 35, 0.9); /* More opaque, less blur cost */
+  /* CRITICAL: Eliminate ALL backdrop-filter on mobile panels.
+     Use opaque backgrounds instead — saves massive GPU compositing cost.
+     backdrop-filter: blur() is the #1 mobile GPU killer. */
+  #control-panel, #explanation-panel, #ar-info-panel {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(12, 16, 28, 0.96) !important; /* Near-opaque, no blur needed */
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+  #ARButton {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(12, 16, 28, 0.95) !important;
+  }
+
+  /* Landing page: remove expensive blur on mobile */
+  #landing-page {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(10, 10, 18, 0.95) !important;
   }
 
   /* 2. Floating Educational Panel (Top) */
@@ -1086,10 +1132,10 @@ button {
     border-radius: var(--r-xl);
     z-index: 250;
   }
-  /* Animation for bottom sheet */
+  /* Animation for bottom sheet — simpler on mobile (no scale) */
   @keyframes panelIn {
-    from { opacity: 0; transform: translate(-50%, 20px) scale(0.97); }
-    to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    from { opacity: 0; transform: translate(-50%, 16px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
   }
 
   /* 4. Touch Optimization */
@@ -1104,7 +1150,13 @@ button {
   .ctrl__key { display: none; }
   #hud { display: none !important; }
 
-  /* 5. AR Button - Right Side Floating Action Button */
+  /* 5. Reduce transition complexity on mobile */
+  .ctrl__op-btn:hover {
+    transform: none; /* Disable hover lift on touch */
+    box-shadow: none;
+  }
+
+  /* 6. AR Button - Right Side Floating Action Button */
   #ARButton {
     bottom: auto !important;
     top: 4rem !important;
@@ -1118,6 +1170,19 @@ button {
     font-size: 0 !important; /* Hide text */
   }
   #ARButton::before { margin: 0 auto; }
+
+  /* 7. Optimize body background for mobile GPU */
+  body {
+    background:
+      linear-gradient(to bottom, rgba(14, 28, 54, 0.3) 0%, rgba(4, 10, 25, 0.9) 100%),
+      url('/foto/gedung.png') no-repeat center center / cover;
+    /* Removed radial-gradient vignette layer — saves one compositing pass on mobile */
+  }
+
+  /* 8. Simpler landing page transition */
+  #landing-page {
+    transition: opacity 0.5s ease !important; /* Faster, no transform */
+  }
 }
 
 @media (max-width: 480px) {
@@ -1137,5 +1202,12 @@ button {
   #ARButton {
     top: 3.8rem !important;
     right: 0.5rem !important;
+  }
+
+  /* Ultra-mobile: simplify body background further */
+  body {
+    background:
+      linear-gradient(to bottom, rgba(8, 14, 30, 0.4) 0%, rgba(4, 8, 20, 0.95) 100%),
+      url('/foto/gedung.png') no-repeat center center / cover;
   }
 }

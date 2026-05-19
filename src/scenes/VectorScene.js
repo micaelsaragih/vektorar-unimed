@@ -2,21 +2,15 @@
  * VectorScene.js
  * Main scene orchestrator — composes the coordinate system,
  * grid, vectors, operations, animations, AR, and UI.
- * Phase 4: Adds OrbitControls, ControlPanel, improved lighting.
+ *
+ * Phase 5: Progressive async initialization for mobile stability.
+ * Systems are initialized in stages with yield points to prevent
+ * main thread blocking on Android devices.
  */
 
 import * as THREE from 'three';
-import { CoordinateSystem } from '../math/CoordinateSystem.js';
-import { CoordinateGrid } from '../vectors/CoordinateGrid.js';
-import { VectorFactory } from '../vectors/VectorFactory.js';
-import { OperationManager } from '../math/OperationManager.js';
-import { TutorialManager } from '../education/TutorialManager.js';
-import { ControlPanel } from '../ui/ControlPanel.js';
-import { CameraController } from '../interaction/CameraController.js';
-import { ARSessionManager } from '../ar/ARSessionManager.js';
-import { HitTestManager } from '../ar/HitTestManager.js';
-import { Reticle } from '../ar/Reticle.js';
 import { COLORS } from '../core/Constants.js';
+import { isMobile, yieldToMain } from '../core/MobileDetect.js';
 
 export class VectorScene {
   /**
@@ -28,28 +22,102 @@ export class VectorScene {
     this._renderer = engine.getRenderer();
     this._camera = engine.getCamera();
 
-    // Sub-systems
+    // Sub-systems (lazily initialized)
     this._arRoot = new THREE.Group();
     this._scene.add(this._arRoot);
     
     this._coordinateSystem = null;
     this._grid = null;
-    this._vectorFactory = new VectorFactory();
+    this._vectorFactory = null;
     this._operationManager = null;
     this._controlPanel = null;
     this._cameraController = null;
     this._arSession = null;
     this._hitTestManager = null;
     this._reticle = null;
+    this._tutorialManager = null;
 
     // State
     this._isARMode = false;
+    this._isInitialized = false;
+    this._initPromise = null;
   }
 
   /**
-   * Initialize all visual components.
+   * Progressive async initialization — yields to main thread between
+   * each subsystem to prevent Android freeze.
+   * 
+   * @param {(progress: number, message: string) => void} [onProgress] 
+   * @returns {Promise<void>}
+   */
+  async initProgressive(onProgress) {
+    if (this._isInitialized) return;
+    if (this._initPromise) return this._initPromise;
+
+    this._initPromise = this._doProgressiveInit(onProgress);
+    await this._initPromise;
+  }
+
+  /** @private */
+  async _doProgressiveInit(onProgress) {
+    const report = (pct, msg) => {
+      console.log(`[VectorScene] ${msg} (${pct}%)`);
+      if (onProgress) onProgress(pct, msg);
+    };
+
+    try {
+      // Phase 1: Camera controls (lightweight)
+      report(10, 'Menginisialisasi kamera...');
+      await this._setupCameraInteraction();
+      await yieldToMain(16); // one frame
+
+      // Phase 2: Coordinate system
+      report(25, 'Membangun sistem koordinat...');
+      await this._setupCoordinateSystem();
+      await yieldToMain(16);
+
+      // Phase 3: Grid
+      report(40, 'Membuat grid...');
+      await this._setupGrid();
+      await yieldToMain(16);
+
+      // Phase 4: Vectors
+      report(55, 'Membuat vektor...');
+      await this._setupExampleVectors();
+      await yieldToMain(16);
+
+      // Phase 5: Operations + UI (heavier — builds DOM)
+      report(70, 'Menyiapkan operasi...');
+      await this._setupOperations();
+      await yieldToMain(32); // extra breathing room after DOM work
+
+      // Phase 6: Enhanced lighting (lighter on mobile)
+      report(85, 'Menyiapkan pencahayaan...');
+      this._setupEnhancedLighting();
+      await yieldToMain(16);
+
+      // Phase 7: Register update loop
+      report(95, 'Memulai render loop...');
+      this._registerUpdateLoop();
+
+      this._isInitialized = true;
+      report(100, '✓ Visualisasi siap');
+      console.log('[VectorScene] ✓ all systems initialized');
+
+    } catch (err) {
+      console.error('[VectorScene] Initialization error:', err);
+      // Even if some subsystem fails, mark as initialized to prevent retries
+      this._isInitialized = true;
+      throw err;
+    }
+  }
+
+  /**
+   * Legacy synchronous init (kept for backward compatibility if needed).
+   * NOT recommended on mobile — use initProgressive() instead.
    */
   init() {
+    console.warn('[VectorScene] Using synchronous init — prefer initProgressive() for mobile');
     this._setupCameraInteraction();
     this._setupCoordinateSystem();
     this._setupGrid();
@@ -57,25 +125,35 @@ export class VectorScene {
     this._setupOperations();
     this._setupEnhancedLighting();
     this._registerUpdateLoop();
+    this._isInitialized = true;
   }
 
   // ─── Setup Methods ─────────────────────────────────────
 
-  _setupCameraInteraction() {
+  async _setupCameraInteraction() {
+    const { CameraController } = await import('../interaction/CameraController.js');
     this._cameraController = new CameraController(this._camera, this._renderer.domElement);
+    console.log('[VectorScene] ✓ controls initialized');
   }
 
-  _setupCoordinateSystem() {
+  async _setupCoordinateSystem() {
+    const { CoordinateSystem } = await import('../math/CoordinateSystem.js');
     this._coordinateSystem = new CoordinateSystem({ axisLength: 5 });
     this._coordinateSystem.addTo(this._arRoot);
+    console.log('[VectorScene] ✓ coordinate system initialized');
   }
 
-  _setupGrid() {
+  async _setupGrid() {
+    const { CoordinateGrid } = await import('../vectors/CoordinateGrid.js');
     this._grid = new CoordinateGrid({ size: 10, divisions: 10 });
     this._grid.addTo(this._arRoot);
+    console.log('[VectorScene] ✓ grid initialized');
   }
 
-  _setupExampleVectors() {
+  async _setupExampleVectors() {
+    const { VectorFactory } = await import('../vectors/VectorFactory.js');
+    this._vectorFactory = new VectorFactory();
+
     this._vectorFactory.create({
       name: 'p',
       x: 2, y: 1, z: 3,
@@ -89,12 +167,18 @@ export class VectorScene {
     });
 
     this._vectorFactory.addAllTo(this._arRoot);
+    console.log('[VectorScene] ✓ vectors initialized');
   }
 
-  _setupOperations() {
+  async _setupOperations() {
+    const { OperationManager } = await import('../math/OperationManager.js');
+    const { TutorialManager } = await import('../education/TutorialManager.js');
+    const { ControlPanel } = await import('../ui/ControlPanel.js');
+
     this._operationManager = new OperationManager(this._arRoot, this._vectorFactory);
     this._tutorialManager = new TutorialManager(this._operationManager);
     this._controlPanel = new ControlPanel(this._operationManager, this._vectorFactory, this._tutorialManager);
+    console.log('[VectorScene] ✓ operations + UI initialized');
   }
 
   async initializeARSafe() {
@@ -120,17 +204,22 @@ export class VectorScene {
         // Even if not supported, we can initialize the button to show "AR NOT SUPPORTED"
       }
 
-      this._setupAR();
+      await this._setupAR();
       
       // Finally enable renderer xr AFTER it's safe
       this._engine.enableXR();
+      console.log('[WebXR] ✓ AR initialized');
       
     } catch (e) {
       console.error('[WebXR] Fatal error during AR initialization:', e);
     }
   }
 
-  _setupAR() {
+  async _setupAR() {
+    const { ARSessionManager } = await import('../ar/ARSessionManager.js');
+    const { HitTestManager } = await import('../ar/HitTestManager.js');
+    const { Reticle } = await import('../ar/Reticle.js');
+
     const overlayElement = document.getElementById('overlay-content');
     this._arSession = new ARSessionManager(this._renderer, { overlayElement });
     this._hitTestManager = new HitTestManager();
@@ -144,7 +233,7 @@ export class VectorScene {
   }
 
   _onSelect() {
-    if (this._reticle.isVisible() && this._isARMode) {
+    if (this._reticle && this._reticle.isVisible() && this._isARMode) {
       this._arRoot.position.setFromMatrixPosition(this._reticle.mesh.matrix);
       // Optional: align rotation with reticle
       // this._arRoot.quaternion.setFromRotationMatrix(this._reticle.mesh.matrix);
@@ -154,6 +243,7 @@ export class VectorScene {
 
   /**
    * Cinematic lighting rig for futuristic lab atmosphere.
+   * Reduced on mobile: fewer point lights, no spot light.
    */
   _setupEnhancedLighting() {
     // Warm key fill — main depth light
@@ -161,22 +251,29 @@ export class VectorScene {
     keyFill.position.set(-3, 2, 4);
     this._scene.add(keyFill);
 
-    // Cool rim light — edge separation
-    const rimLight = new THREE.PointLight(0xe2e8f0, 0.4, 18);
-    rimLight.position.set(3, 5, -4);
-    this._scene.add(rimLight);
+    if (isMobile()) {
+      // Mobile: single additional light is sufficient with ambient from Engine
+      const rimLight = new THREE.PointLight(0xe2e8f0, 0.3, 18);
+      rimLight.position.set(3, 5, -4);
+      this._scene.add(rimLight);
+      console.log('[VectorScene] ✓ lighting initialized (mobile-optimized: 2 lights)');
+    } else {
+      // Desktop: full cinematic rig
+      const rimLight = new THREE.PointLight(0xe2e8f0, 0.4, 18);
+      rimLight.position.set(3, 5, -4);
+      this._scene.add(rimLight);
 
-    // Subtle backlight — prevents flat rear faces
-    const backLight = new THREE.PointLight(0xedf2f7, 0.3, 20);
-    backLight.position.set(0, -2, -5);
-    this._scene.add(backLight);
+      const backLight = new THREE.PointLight(0xedf2f7, 0.3, 20);
+      backLight.position.set(0, -2, -5);
+      this._scene.add(backLight);
 
-    // Low accent spot — highlights origin area
-    const spotLight = new THREE.SpotLight(0xffffff, 0.2, 15, Math.PI / 6, 0.8);
-    spotLight.position.set(0, 8, 0);
-    spotLight.target.position.set(0, 0, 0);
-    this._scene.add(spotLight);
-    this._scene.add(spotLight.target);
+      const spotLight = new THREE.SpotLight(0xffffff, 0.2, 15, Math.PI / 6, 0.8);
+      spotLight.position.set(0, 8, 0);
+      spotLight.target.position.set(0, 0, 0);
+      this._scene.add(spotLight);
+      this._scene.add(spotLight.target);
+      console.log('[VectorScene] ✓ lighting initialized (desktop: 4 lights)');
+    }
   }
 
   _registerUpdateLoop() {
@@ -199,7 +296,7 @@ export class VectorScene {
     }
 
     // Update AR hit-test
-    if (frame) {
+    if (frame && this._hitTestManager && this._reticle) {
       this._hitTestManager.update(this._renderer, frame);
       this._reticle.update(this._hitTestManager.getHitMatrix());
 
@@ -234,6 +331,9 @@ export class VectorScene {
   }
 
   // ─── Public API ────────────────────────────────────────
+
+  /** @returns {boolean} Whether progressive init is complete */
+  get isInitialized() { return this._isInitialized; }
 
   getVectorFactory() { return this._vectorFactory; }
   getOperationManager() { return this._operationManager; }

@@ -1,91 +1,101 @@
 /**
  * main.js
  * Application entry point.
- * Composes the Engine, VectorScene, and starts the render loop.
+ *
+ * Architecture (Phase 5 — Mobile-optimized):
+ * 1. Create Engine immediately (lightweight — just renderer + camera + base lighting)
+ * 2. Build Landing Page overlay (no 3D scene yet)
+ * 3. Show loading screen briefly
+ * 4. When user clicks "Mulai Visualisasi", LandingPage triggers
+ *    progressive async scene initialization via VectorScene.initProgressive()
+ *
+ * This prevents Android freeze by deferring heavy 3D initialization
+ * until the user explicitly requests it.
  */
 
 import { Engine } from './core/Engine.js';
 import { VectorScene } from './scenes/VectorScene.js';
 import { LandingPage } from './landing/LandingPage.js';
+import { isMobile } from './core/MobileDetect.js';
 
 // ─── Bootstrap ───────────────────────────────────────────
 
+console.log('[Startup] Initializing engine...');
 const engine = new Engine(document.body);
-console.log('[Startup] renderer initialized');
 
-// Create and initialize the vector scene
+// Create VectorScene instance (but do NOT initialize subsystems yet)
 const vectorScene = new VectorScene(engine);
-vectorScene.init();
-console.log('[Startup] scene initialized');
-console.log('[Startup] controls initialized'); // Controls are initialized in vectorScene.init()
+console.log('[Startup] VectorScene created (deferred init)');
 
-// Build Landing Page
+// Build Landing Page — will trigger scene init on button press
 const landing = new LandingPage(engine, vectorScene);
 landing.build();
-console.log('[Startup] UI initialized');
+console.log('[Startup] Landing page built');
 
-// Loading Sequence
+// ─── Loading Screen ──────────────────────────────────────
+
 const loadingScreen = document.getElementById('loading-screen');
 const loadingBar = document.getElementById('loading-bar');
 const loadingText = document.getElementById('loading-text');
 
 let progress = 0;
 const interval = setInterval(() => {
-  progress += Math.random() * 15;
+  progress += Math.random() * 20;
   if (progress > 90) progress = 90;
   
-  loadingBar.style.width = `${progress}%`;
+  if (loadingBar) loadingBar.style.width = `${progress}%`;
   
-  if (progress > 40) loadingText.textContent = 'Memuat model vektor...';
-  if (progress > 70) loadingText.textContent = 'Menyiapkan WebXR...';
+  if (progress > 40 && loadingText) loadingText.textContent = 'Menyiapkan antarmuka...';
+  if (progress > 70 && loadingText) loadingText.textContent = 'Hampir siap...';
 }, 100);
 
-// Wait for fonts and complete loading with a strict timeout protection
+// Wait for fonts and complete loading with strict timeout protection
 const loadingCompletion = Promise.all([
-  document.fonts.ready,
-  new Promise(resolve => setTimeout(resolve, 800)) // ensure minimum display time
+  document.fonts.ready.catch(() => {}), // Don't block on font failures
+  new Promise(resolve => setTimeout(resolve, isMobile() ? 500 : 800))
 ]);
 
 const timeoutProtection = new Promise(resolve => setTimeout(() => {
   console.warn('[Startup] Loading timeout reached. Forcing startup completion.');
   resolve();
-}, 5000)); // 5 second maximum loading time
+}, 3000)); // 3 second maximum (reduced from 5s for faster mobile startup)
 
 Promise.race([loadingCompletion, timeoutProtection]).then(() => {
   clearInterval(interval);
-  loadingBar.style.width = '100%';
-  loadingText.textContent = 'Siap!';
+  if (loadingBar) loadingBar.style.width = '100%';
+  if (loadingText) loadingText.textContent = 'Siap!';
   
   setTimeout(() => {
-    loadingScreen.style.opacity = '0';
-    setTimeout(() => {
-      loadingScreen.style.display = 'none';
-      // Start rendering in background with autoRotate
-      vectorScene.getCameraController().setAutoRotate(true);
-      engine.start();
-      console.log('[Startup] app fully loaded');
-
-      // Initialize AR safely after main startup is complete
+    if (loadingScreen) {
+      loadingScreen.style.opacity = '0';
       setTimeout(() => {
-        vectorScene.initializeARSafe().then(() => {
-          console.log('[Startup] WebXR initialized');
-        });
-      }, 1000);
-    }, 800);
-  }, 400);
+        loadingScreen.style.display = 'none';
+        console.log('[Startup] ✓ Loading screen dismissed, landing page visible');
+        
+        // On desktop: optionally start a lightweight preview render
+        // On mobile: keep the renderer idle until user clicks "Mulai Visualisasi"
+        if (!isMobile()) {
+          // Desktop: start renderer for subtle background animation behind landing
+          engine.start();
+        }
+      }, 600);
+    }
+  }, 300);
 }).catch((err) => {
   console.error('[Startup] Loading error:', err);
   // Fallback to ensure we never freeze
-  loadingScreen.style.display = 'none';
-  engine.start();
-  console.log('[Startup] app fully loaded (fallback)');
+  if (loadingScreen) loadingScreen.style.display = 'none';
+  console.log('[Startup] ✓ app loaded (fallback)');
 });
 
-// Presentation Mode Logic
+// ─── Presentation Mode ──────────────────────────────────
+
 const btnPresentation = document.getElementById('btn-presentation');
 let isPresentationMode = false;
 
 const togglePresentationMode = () => {
+  if (!vectorScene.isInitialized) return; // Don't toggle before init
+  
   isPresentationMode = !isPresentationMode;
   document.body.classList.toggle('presentation-mode', isPresentationMode);
   
@@ -106,12 +116,14 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Expose to console for development
+// ─── Dev Tools ──────────────────────────────────────────
+
 if (import.meta.env.DEV) {
   window.__engine = engine;
   window.__vectorScene = vectorScene;
-  window.__vectors = vectorScene.getVectorFactory();
-  window.__ops = vectorScene.getOperationManager();
+  // These will be null until initProgressive completes
+  Object.defineProperty(window, '__vectors', { get: () => vectorScene.getVectorFactory() });
+  Object.defineProperty(window, '__ops', { get: () => vectorScene.getOperationManager() });
   console.log(
     '%c🔢 VektorAR — Platform Edukasi Matematika Vektor 3D Interaktif',
     'color: #00e5ff; font-size: 14px; font-weight: bold;'
