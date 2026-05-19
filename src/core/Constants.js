@@ -24,28 +24,28 @@ export const CAMERA = {
 export const LIGHTING = {
   ambient: {
     color: 0xffffff,
-    intensity: 0.6,
+    intensity: 0.7,  /* Bumped from 0.6 for brighter vectors against dark bg */
   },
   directional: {
     color: 0xffffff,
-    intensity: 1.0,
+    intensity: 1.1,  /* Slightly brighter key light */
     position: { x: 5, y: 10, z: 7 },
   },
   hemisphere: {
-    skyColor: 0xffffff,
-    groundColor: 0x0f172a, /* Dark navy ground for depth */
-    intensity: 0.7,
+    skyColor: 0xe8f0ff,   /* Slight cool tint to match futuristic palette */
+    groundColor: 0x060a14, /* Matches new --bg deep space black */
+    intensity: 0.65,
   },
 };
 
 // ─── Scene Atmosphere ────────────────────────────────────
 export const ATMOSPHERE = {
   fog: {
-    color: 0x0b1120, /* Matches dark CSS background */
-    near: 6,
-    far: 20,
+    color: 0x060a14, /* Matches new deep-space bg.png */
+    near: 8,         /* Push fog start further for better depth visibility */
+    far: 24,         /* Extended range — vectors stay clear, horizon fades naturally */
   },
-  toneMappingExposure: 1.2,
+  toneMappingExposure: 1.25,  /* Slightly brighter overall exposure */
 };
 
 // ─── Colors ──────────────────────────────────────────────
@@ -61,7 +61,7 @@ export const COLORS = {
   gridCenter: 0x64748b, // Medium slate
 
   // Background
-  background: 0x0b1120, // Deep academic navy
+  background: 0x060a14, // Deep space black (matches bg.png)
 
   // Origin marker
   origin: 0xffffff, // White
@@ -119,7 +119,7 @@ export const VECTOR = {
   endpointSegments: 16,
   labelSize: 0.25,
   labelOffsetY: 0.25,
-  emissiveIntensity: 0.3, /* Increased from 0.15 for better glow */
+  emissiveIntensity: 0.4, /* Increased from 0.3 for brighter glow against dark bg */
   minLength: 0.001,
 };
 

@@ -243,36 +243,42 @@ export class VectorScene {
 
   /**
    * Cinematic lighting rig for futuristic lab atmosphere.
+   * Tuned for dark bg.png — vectors must pop with clarity.
    * Reduced on mobile: fewer point lights, no spot light.
    */
   _setupEnhancedLighting() {
-    // Warm key fill — main depth light
-    const keyFill = new THREE.PointLight(0xffffff, 0.6, 25);
+    // Brighter key fill for vector clarity against dark background
+    const keyFill = new THREE.PointLight(0xffffff, 0.75, 28);
     keyFill.position.set(-3, 2, 4);
     this._scene.add(keyFill);
 
     if (isMobile()) {
-      // Mobile: single additional light is sufficient with ambient from Engine
-      const rimLight = new THREE.PointLight(0xe2e8f0, 0.3, 18);
+      // Mobile: two lights total — efficient but visible
+      const rimLight = new THREE.PointLight(0xe2e8f0, 0.35, 20);
       rimLight.position.set(3, 5, -4);
       this._scene.add(rimLight);
       console.log('[VectorScene] ✓ lighting initialized (mobile-optimized: 2 lights)');
     } else {
-      // Desktop: full cinematic rig
-      const rimLight = new THREE.PointLight(0xe2e8f0, 0.4, 18);
+      // Desktop: full cinematic rig with futuristic accent
+      const rimLight = new THREE.PointLight(0xe2e8f0, 0.45, 22);
       rimLight.position.set(3, 5, -4);
       this._scene.add(rimLight);
 
-      const backLight = new THREE.PointLight(0xedf2f7, 0.3, 20);
+      const backLight = new THREE.PointLight(0xedf2f7, 0.3, 22);
       backLight.position.set(0, -2, -5);
       this._scene.add(backLight);
 
-      const spotLight = new THREE.SpotLight(0xffffff, 0.2, 15, Math.PI / 6, 0.8);
+      // Subtle cyan accent — futuristic lab atmosphere
+      const accentLight = new THREE.PointLight(0x38bdf8, 0.12, 18);
+      accentLight.position.set(-2, 0, -3);
+      this._scene.add(accentLight);
+
+      const spotLight = new THREE.SpotLight(0xffffff, 0.25, 16, Math.PI / 6, 0.8);
       spotLight.position.set(0, 8, 0);
       spotLight.target.position.set(0, 0, 0);
       this._scene.add(spotLight);
       this._scene.add(spotLight.target);
-      console.log('[VectorScene] ✓ lighting initialized (desktop: 4 lights)');
+      console.log('[VectorScene] ✓ lighting initialized (desktop: 5 lights)');
     }
   }
 
