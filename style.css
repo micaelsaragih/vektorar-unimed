@@ -80,6 +80,8 @@ canvas {
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
+  touch-action: none;  /* CRITICAL: prevent browser from consuming touch for scroll/zoom */
 }
 
 /* ─── Loading Screen ──────────────────────────── */
@@ -211,10 +213,11 @@ canvas {
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* ─── AR Overlay ────────────────────────────── */
+/* ─── AR Overlay (only active during WebXR sessions) ─── */
 #overlay-content {
   position: fixed; inset: 0;
   pointer-events: none;
+  touch-action: none;
   z-index: 100;
 }
 #overlay-content > * { pointer-events: auto; }
@@ -257,6 +260,8 @@ canvas {
   display: flex;
   flex-direction: column;
   z-index: 200;
+  pointer-events: auto;
+  touch-action: pan-y;
 
   background: var(--surface);
   backdrop-filter: blur(24px) saturate(1.3);
@@ -542,6 +547,8 @@ canvas {
   flex-direction: column;
   gap: 0.4rem;
   z-index: 200;
+  pointer-events: auto;
+  touch-action: pan-y;
 
   background: var(--surface);
   backdrop-filter: blur(24px) saturate(1.3);
@@ -721,6 +728,8 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .input-modal {
@@ -1027,8 +1036,27 @@ body.presentation-mode #btn-presentation {
 }
 
 /* ─── Touch Optimization (Global) ───────────── */
-button {
+button,
+.ctrl__op-btn,
+.ctrl__action-btn,
+.ctrl__vec-btn,
+.ctrl__tab,
+.input-btn,
+.btn-primary,
+.btn-secondary {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Prevent overscroll/pull-to-refresh on mobile */
+html {
+  overscroll-behavior: none;
+}
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
 }
 
 /* ═══════════════════════════════════════════════

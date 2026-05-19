@@ -1,13 +1,14 @@
 /**
  * CameraController.js
- * Manages desktop camera interaction using Three.js OrbitControls.
+ * Manages camera interaction using Three.js OrbitControls.
  * Features smooth damping, limits optimized for mathematical visualization,
  * and AR state awareness (disables controls when in WebXR mode).
  *
- * Mobile-optimized: higher damping, reduced touch sensitivity,
- * mobile-safe update frequency.
+ * Mobile-optimized: sets touch-action on canvas, higher damping,
+ * reduced touch sensitivity, proper touch gesture mapping.
  */
 
+import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { isMobile } from '../core/MobileDetect.js';
 
@@ -18,10 +19,24 @@ export class CameraController {
    */
   constructor(camera, domElement) {
     this._camera = camera;
-    this._controls = new OrbitControls(camera, domElement);
+    this._domElement = domElement;
     this._isMobile = isMobile();
+
+    // CRITICAL: Set touch-action on the canvas to prevent browser
+    // from consuming touch events for native scroll/zoom gestures.
+    // Without this, OrbitControls never receives touch events on Android.
+    domElement.style.touchAction = 'none';
+
+    // Ensure canvas can receive pointer events
+    domElement.style.pointerEvents = 'auto';
+
+    this._controls = new OrbitControls(camera, domElement);
     
     this._configureControls();
+
+    if (this._isMobile) {
+      console.log('[CameraController] ✓ Mobile touch controls configured');
+    }
   }
 
   /**
@@ -34,9 +49,9 @@ export class CameraController {
     this._controls.dampingFactor = this._isMobile ? 0.12 : 0.05;
 
     // Speeds — reduced on mobile for precision touch control
-    this._controls.rotateSpeed = this._isMobile ? 0.45 : 0.65;
-    this._controls.zoomSpeed = this._isMobile ? 0.6 : 0.8;
-    this._controls.panSpeed = this._isMobile ? 0.35 : 0.5;
+    this._controls.rotateSpeed = this._isMobile ? 0.5 : 0.65;
+    this._controls.zoomSpeed = this._isMobile ? 0.7 : 0.8;
+    this._controls.panSpeed = this._isMobile ? 0.4 : 0.5;
 
     // Distance Limits
     this._controls.minDistance = this._isMobile ? 2.5 : 1.5;
@@ -45,13 +60,11 @@ export class CameraController {
     // Angle Limits (prevent going too far below the grid)
     this._controls.maxPolarAngle = Math.PI * 0.85;
 
-    // Mobile: enable touch gestures explicitly
-    if (this._isMobile) {
-      this._controls.touches = {
-        ONE: 0, // ROTATE
-        TWO: 2, // DOLLY_PAN
-      };
-    }
+    // Touch gesture mapping using THREE.TOUCH enum
+    this._controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,      // Single finger = rotate
+      TWO: THREE.TOUCH.DOLLY_PAN,   // Two fingers = pinch zoom + pan
+    };
 
     // Default target focused slightly above the origin
     this._controls.target.set(0, 0.5, 0);

@@ -146,8 +146,9 @@ export class ControlPanel {
       </div>
     `;
 
-    const container = document.getElementById('overlay-content') || document.body;
-    container.appendChild(this._element);
+    // Append directly to body — NOT to #overlay-content which is a fullscreen
+    // layer that can interfere with touch events on Android.
+    document.body.appendChild(this._element);
 
     // Tabs logic
     const tabs = this._element.querySelectorAll('.ctrl__tab');

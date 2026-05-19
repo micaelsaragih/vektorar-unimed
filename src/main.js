@@ -137,3 +137,38 @@ if (import.meta.env.DEV) {
     'color: #bb86fc; font-size: 11px;'
   );
 }
+
+// ─── Mobile Touch Debugging ─────────────────────────────
+
+if (import.meta.env.DEV && isMobile()) {
+  console.log('[TouchDebug] Mobile device detected — enabling touch interaction logging');
+
+  const canvas = engine.getRenderer().domElement;
+
+  // Log touch events on canvas
+  canvas.addEventListener('touchstart', (e) => {
+    console.log(`[TouchDebug] canvas touchstart — touches: ${e.touches.length}, target: ${e.target.tagName}`);
+  }, { passive: true });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    console.log(`[TouchDebug] canvas pointerdown — type: ${e.pointerType}, target: ${e.target.tagName}`);
+  }, { passive: true });
+
+  // Log touch events on document to detect if something is intercepting
+  document.addEventListener('touchstart', (e) => {
+    const tag = e.target.tagName;
+    const id = e.target.id || 'no-id';
+    const cls = e.target.className?.toString().substring(0, 30) || '';
+    console.log(`[TouchDebug] document touchstart — target: ${tag}#${id}.${cls}`);
+  }, { passive: true, capture: true });
+
+  // Log blocked interactions (elements with pointer-events: none being touched)
+  document.addEventListener('pointerdown', (e) => {
+    const computed = window.getComputedStyle(e.target);
+    if (computed.pointerEvents === 'none') {
+      console.warn(`[TouchDebug] ⚠ pointerdown on pointer-events:none element — ${e.target.tagName}#${e.target.id}`);
+    }
+  }, { passive: true, capture: true });
+
+  console.log('[TouchDebug] ✓ Touch interaction logging enabled');
+}

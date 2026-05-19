@@ -105,8 +105,9 @@ export class ExplanationPanel {
         </div>
       </div>
     `;
-    const container = document.getElementById('overlay-content') || document.body;
-    container.appendChild(this._element);
+    // Append directly to body — NOT to #overlay-content which is a fullscreen
+    // layer that can interfere with touch events on Android.
+    document.body.appendChild(this._element);
     
     // Add collapse logic
     const headerToggle = this._element.querySelector('#explain-header-toggle');
