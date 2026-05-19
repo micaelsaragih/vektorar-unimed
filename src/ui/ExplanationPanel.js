@@ -82,22 +82,54 @@ export class ExplanationPanel {
     this._element = document.createElement('div');
     this._element.id = 'explanation-panel';
     this._element.innerHTML = `
-      <div class="explain__header">
-        <div class="explain__icon">📐</div>
-        <h3 class="explain__title" id="explain-title"></h3>
+      <div class="explain__header" style="justify-content: space-between; cursor: pointer;" id="explain-header-toggle">
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <div class="explain__icon">📐</div>
+          <h3 class="explain__title" id="explain-title"></h3>
+        </div>
+        <button class="ctrl__collapse" id="explain-collapse" title="Minimalkan">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 5L7 9L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
-      <div class="explain__formula" id="explain-formula"></div>
-      <p class="explain__text" id="explain-text"></p>
-      <div class="explain__tip" id="explain-tip"></div>
-      
-      <!-- Tutorial Controls -->
-      <div class="explain__controls" id="explain-controls" style="display: none; margin-top: 0.8rem; gap: 0.5rem;">
-        <button class="ctrl__action-btn" id="btn-prev" disabled>⬅️ Sebelumnya</button>
-        <button class="ctrl__action-btn" id="btn-next">Berikutnya ➡️</button>
+      <div class="explain__body" id="explain-body" style="transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease; overflow: hidden; max-height: 500px;">
+        <div class="explain__formula" id="explain-formula" style="margin-top: 0.5rem;"></div>
+        <p class="explain__text" id="explain-text"></p>
+        <div class="explain__tip" id="explain-tip"></div>
+        
+        <!-- Tutorial Controls -->
+        <div class="explain__controls" id="explain-controls" style="display: none; margin-top: 0.8rem; gap: 0.5rem;">
+          <button class="ctrl__action-btn" id="btn-prev" disabled>⬅️ Sebelumnya</button>
+          <button class="ctrl__action-btn" id="btn-next">Berikutnya ➡️</button>
+        </div>
       </div>
     `;
     const container = document.getElementById('overlay-content') || document.body;
     container.appendChild(this._element);
+    
+    // Add collapse logic
+    const headerToggle = this._element.querySelector('#explain-header-toggle');
+    const collapseBtn = this._element.querySelector('#explain-collapse');
+    const body = this._element.querySelector('#explain-body');
+    
+    headerToggle.addEventListener('click', () => {
+      const isCollapsed = body.style.maxHeight === '0px';
+      if (isCollapsed) {
+        body.style.maxHeight = '500px';
+        body.style.opacity = '1';
+        body.style.marginTop = '0';
+        collapseBtn.style.transform = 'rotate(0deg)';
+        this._element.classList.remove('explain--collapsed-state');
+      } else {
+        body.style.maxHeight = '0px';
+        body.style.opacity = '0';
+        body.style.marginTop = '-0.5rem';
+        collapseBtn.style.transform = 'rotate(180deg)';
+        this._element.classList.add('explain--collapsed-state');
+      }
+    });
+
     this.showExplanation('default');
   }
 

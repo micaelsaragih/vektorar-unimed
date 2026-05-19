@@ -784,34 +784,6 @@ canvas {
   }
 }
 
-@media (max-width: 768px) {
-  .header__title {
-    display: none; /* Hide subtitle on mobile to save space */
-  }
-  .header__actions {
-    border-left: none !important;
-  }
-  .header__btn-presentation span {
-    display: none; /* Icon only on mobile */
-  }
-  .header__btn-presentation {
-    padding: 0.4rem;
-  }
-  #control-panel {
-    top: auto;
-    bottom: 1rem;
-    right: 1rem;
-    width: calc(100% - 2rem);
-    max-width: 320px;
-  }
-  #explanation-panel {
-    top: 4rem;
-    left: 1rem;
-    width: calc(100% - 2rem);
-    max-width: 320px;
-  }
-}
-
 /* ═══════════════════════════════════════════════
    LANDING PAGE STYLES
    ═══════════════════════════════════════════════ */
@@ -1060,96 +1032,110 @@ button {
 }
 
 /* ═══════════════════════════════════════════════
-   RESPONSIVE
+/* ═══════════════════════════════════════════════
+   MOBILE RESPONSIVE (PHASE 4 REFINEMENT)
    ═══════════════════════════════════════════════ */
 
 @media (max-width: 850px) {
+  /* 1. Header Optimization */
   #app-header {
-    padding: 1rem 1.25rem;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(to bottom, rgba(11, 17, 32, 0.8) 0%, transparent 100%);
   }
-  .header__logo-img { height: 38px; }
-  .header__logo { font-size: 1.1rem; }
-  .header__title { font-size: 0.7rem; }
-
-  /* Reduce heavy visual effects on mobile */
-  #control-panel, #explanation-panel, .hud__vec, #ar-info-panel, #ARButton {
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    background: rgba(15, 25, 50, 0.85); /* more opaque */
-  }
-
-  #control-panel {
-    width: 280px;
-    top: 4.5rem; /* clear header */
-    right: 0.75rem;
-    border-radius: var(--r-lg);
-  }
-
-  .ctrl__op-btn, .ctrl__vec-btn, .ctrl__action-btn {
-    padding: 0.6rem 0.55rem; /* Larger touch targets */
-  }
-
-  #explanation-panel {
-    width: 280px;
-    left: 0.75rem;
-    bottom: 5rem;
-    border-radius: var(--r-lg);
-  }
-
-  #hud {
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    bottom: 0.75rem;
-    width: 100%;
-  }
-
-  .hud__mag { display: none; }
-  .ctrl__key { display: none; }
-
-  #ARButton {
-    bottom: 1.25rem !important;
-    left: 1rem !important;
-    padding: 0.5rem 0.8rem !important;
-    min-width: 0 !important;
-  }
-}
-
-@media (max-width: 480px) {
-  #app-header {
-    padding: 0.75rem 1rem;
-    background: linear-gradient(to bottom, rgba(4,10,25,0.8), transparent);
-    width: 100%;
-  }
+  #app-header::before { height: 70px; }
   .header__logo-img { height: 32px; }
   .header__logo { font-size: 1rem; }
   .header__title { font-size: 0.65rem; }
+  .header__actions { border-left: none !important; margin-left: auto !important; padding-left: 0 !important; }
+  .header__btn-presentation span { display: none; }
+  .header__btn-presentation { padding: 0.45rem; border-radius: var(--r-md); }
 
-  #control-panel { 
-    width: calc(100% - 1.5rem); 
-    top: 4rem;
-    right: 0.75rem;
+  /* Reduce performance cost of blur on mobile */
+  #control-panel, #explanation-panel, #ar-info-panel, #ARButton {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(15, 20, 35, 0.9); /* More opaque, less blur cost */
   }
 
-  .ctrl__op-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
+  /* 2. Floating Educational Panel (Top) */
   #explanation-panel {
-    width: calc(100% - 1.5rem);
-    left: 0.75rem;
-    bottom: 4.5rem;
-    padding: 0.65rem 0.8rem;
+    position: fixed;
+    top: 4rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 360px;
+    padding: 0.8rem 1rem;
+    border-radius: var(--r-xl);
+    z-index: 200;
+  }
+  .explain--collapsed {
+    transform: translate(-50%, -120%);
+  }
+
+  /* 3. Floating Control Panel / Bottom Sheet */
+  #control-panel {
+    position: fixed;
+    top: auto;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 360px;
+    right: auto;
+    border-radius: var(--r-xl);
+    z-index: 250;
+  }
+  /* Animation for bottom sheet */
+  @keyframes panelIn {
+    from { opacity: 0; transform: translate(-50%, 20px) scale(0.97); }
+    to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  }
+
+  /* 4. Touch Optimization */
+  .ctrl__op-btn, .ctrl__vec-btn, .ctrl__action-btn {
+    padding: 0.75rem 0.6rem; /* Larger touch targets */
+  }
+  .ctrl__op-grid {
+    gap: 0.4rem;
   }
   
-  .explain__title { font-size: 0.8rem; }
-  .explain__text { font-size: 0.7rem; }
+  /* Hide elements that clutter mobile */
+  .ctrl__key { display: none; }
+  #hud { display: none !important; }
 
+  /* 5. AR Button - Right Side Floating Action Button */
   #ARButton {
     bottom: auto !important;
-    top: 0.75rem !important;
+    top: 4rem !important;
     right: 1rem !important;
     left: auto !important;
-    padding: 0.4rem 0.7rem !important;
+    padding: 0.5rem !important;
+    min-width: 0 !important;
+    border-radius: 50% !important;
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 0 !important; /* Hide text */
+  }
+  #ARButton::before { margin: 0 auto; }
+}
+
+@media (max-width: 480px) {
+  /* Extreme Mobile Refinements */
+  .header__title { display: none; }
+  
+  #control-panel {
+    bottom: 0.5rem;
+    width: calc(100% - 1rem);
+  }
+  
+  #explanation-panel {
+    top: 3.8rem;
+    width: calc(100% - 1rem);
+  }
+  
+  #ARButton {
+    top: 3.8rem !important;
+    right: 0.5rem !important;
   }
 }
