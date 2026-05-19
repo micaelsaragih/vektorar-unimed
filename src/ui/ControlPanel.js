@@ -163,8 +163,11 @@ export class ControlPanel {
         tab.style.borderBottomColor = 'var(--accent)';
         
         const target = tab.dataset.tab;
-        this._element.querySelectorAll('.ctrl__tab-content').forEach(c => c.style.display = 'none');
-        this._element.querySelector(`#tab-${target}`).style.display = 'block';
+        this._element.querySelectorAll('.ctrl__tab-content').forEach(c => {
+          if (c) c.style.display = 'none';
+        });
+        const targetEl = this._element.querySelector(`#tab-${target}`);
+        if (targetEl) targetEl.style.display = 'block';
       });
     });
 
@@ -173,19 +176,27 @@ export class ControlPanel {
     const btnTutorial = this._element.querySelector('#mode-tutorial');
     
     btnFree.addEventListener('click', () => {
-      btnFree.style.background = 'var(--surface-active)';
-      btnFree.style.borderColor = 'var(--border-active)';
-      btnTutorial.style.background = 'rgba(255,255,255,0.05)';
-      btnTutorial.style.borderColor = 'var(--border)';
+      if (btnFree) {
+        btnFree.style.background = 'var(--surface-active)';
+        btnFree.style.borderColor = 'var(--border-active)';
+      }
+      if (btnTutorial) {
+        btnTutorial.style.background = 'rgba(255,255,255,0.05)';
+        btnTutorial.style.borderColor = 'var(--border)';
+      }
       this._tutorialManager.setMode(false);
       this._handleOperation('reset');
     });
 
     btnTutorial.addEventListener('click', () => {
-      btnTutorial.style.background = 'var(--surface-active)';
-      btnTutorial.style.borderColor = 'var(--border-active)';
-      btnFree.style.background = 'rgba(255,255,255,0.05)';
-      btnFree.style.borderColor = 'var(--border)';
+      if (btnTutorial) {
+        btnTutorial.style.background = 'var(--surface-active)';
+        btnTutorial.style.borderColor = 'var(--border-active)';
+      }
+      if (btnFree) {
+        btnFree.style.background = 'rgba(255,255,255,0.05)';
+        btnFree.style.borderColor = 'var(--border)';
+      }
       this._tutorialManager.setMode(true);
       this._handleOperation('reset');
     });
@@ -360,19 +371,31 @@ export class ControlPanel {
     this._opManager.onStepChange((stepIndex, totalSteps, description) => {
       const bar = this._element.querySelector('#ctrl-progress-bar');
       const info = this._element.querySelector('#ctrl-step-info');
-      const pct = (stepIndex / totalSteps) * 100;
-      bar.style.width = `${pct}%`;
-      info.textContent = `Langkah ${stepIndex}/${totalSteps} — ${description}`;
+      
+      if (bar) {
+        const pct = (stepIndex / totalSteps) * 100;
+        bar.style.width = `${pct}%`;
+      }
+      
+      if (info) {
+        info.textContent = `Langkah ${stepIndex}/${totalSteps} — ${description}`;
+      }
 
       // Update explanation panel with live step
-      this._explanationPanel.updateStep(description);
+      if (this._explanationPanel) {
+        this._explanationPanel.updateStep(description);
+      }
     });
 
     this._opManager.onStatusChange((status, message) => {
       const statusEl = this._element.querySelector('#ctrl-status');
-      const textEl = statusEl.querySelector('.ctrl__status-text');
-      textEl.textContent = message;
-      statusEl.className = `ctrl__status ctrl__status--${status}`;
+      if (statusEl) {
+        const textEl = statusEl.querySelector('.ctrl__status-text');
+        if (textEl) {
+          textEl.textContent = message;
+        }
+        statusEl.className = `ctrl__status ctrl__status--${status}`;
+      }
     });
 
     this._opManager.onComplete(() => {
@@ -399,6 +422,6 @@ export class ControlPanel {
     });
   }
 
-  show() { this._element.style.display = 'flex'; }
-  hide() { this._element.style.display = 'none'; }
+  show() { if (this._element) this._element.style.display = 'flex'; }
+  hide() { if (this._element) this._element.style.display = 'none'; }
 }

@@ -87,8 +87,10 @@ export class VectorInputPanel {
         this._setInputs('p', 2, 2, 2);
         this._setInputs('q', -2, 2, -2);
       }
-      errorEl.textContent = 'Preset dimuat. Klik Terapkan.';
-      errorEl.style.color = '#38a169'; // success green
+      if (errorEl) {
+        errorEl.textContent = 'Preset dimuat. Klik Terapkan.';
+        errorEl.style.color = '#38a169'; // success green
+      }
     });
 
     applyBtn.addEventListener('click', () => {
@@ -101,8 +103,10 @@ export class VectorInputPanel {
       const qz = parseFloat(this._element.querySelector('#q-z').value);
 
       if ([px, py, pz, qx, qy, qz].some(isNaN)) {
-        errorEl.textContent = 'Masukkan angka yang valid untuk koordinat vektor.';
-        errorEl.style.color = '#f87171'; // error red
+        if (errorEl) {
+          errorEl.textContent = 'Masukkan angka yang valid untuk koordinat vektor.';
+          errorEl.style.color = '#f87171'; // error red
+        }
         return;
       }
 
@@ -142,11 +146,14 @@ export class VectorInputPanel {
       this._setInputs('q', dir.x, dir.y, dir.z);
     }
 
-    this._element.querySelector('#input-error').textContent = '';
-    this._element.style.display = 'flex';
+    if (this._element) {
+      const errorEl = this._element.querySelector('#input-error');
+      if (errorEl) errorEl.textContent = '';
+      this._element.style.display = 'flex';
+    }
   }
 
   hide() {
-    this._element.style.display = 'none';
+    if (this._element) this._element.style.display = 'none';
   }
 }

@@ -121,20 +121,22 @@ export class ExplanationPanel {
     });
 
     this._tutorialManager.onModeChange = (isTutorial) => {
-      if (!isTutorial) {
+      if (!isTutorial && controlsContainer) {
         controlsContainer.style.display = 'none';
         this.showExplanation('default');
       }
     };
 
     this._tutorialManager.onTutorialStep = (stepIndex, totalSteps, stepData) => {
-      controlsContainer.style.display = 'flex';
-      btnPrev.disabled = stepIndex === 0;
+      if (controlsContainer) controlsContainer.style.display = 'flex';
+      if (btnPrev) btnPrev.disabled = stepIndex === 0;
       
-      if (stepIndex === totalSteps - 1) {
-        btnNext.innerHTML = '🔄 Ulangi Tutorial';
-      } else {
-        btnNext.innerHTML = 'Berikutnya ➡️';
+      if (btnNext) {
+        if (stepIndex === totalSteps - 1) {
+          btnNext.innerHTML = '🔄 Ulangi Tutorial';
+        } else {
+          btnNext.innerHTML = 'Berikutnya ➡️';
+        }
       }
       
       this.updateStep(stepData.description || 'Proses visualisasi...');
@@ -196,19 +198,25 @@ export class ExplanationPanel {
       }
     }
 
-    titleEl.textContent = data.title;
-    formulaEl.innerHTML = `<span style="font-size: 0.8em; color: var(--text-dim);">${data.formula}</span><br/><span style="color: var(--accent); font-weight: 700;">${dynamicFormula}</span>`;
-    textEl.textContent = data.explanation;
-    tipEl.textContent = data.tip;
+    if (titleEl) titleEl.textContent = data.title;
+    if (formulaEl) formulaEl.innerHTML = `<span style="font-size: 0.8em; color: var(--text-dim);">${data.formula}</span><br/><span style="color: var(--accent); font-weight: 700;">${dynamicFormula}</span>`;
+    if (textEl) textEl.textContent = data.explanation;
+    if (tipEl) tipEl.textContent = data.tip;
 
     // Trigger animation
-    this._element.classList.remove('explain--animate');
-    void this._element.offsetWidth; // reflow
-    this._element.classList.add('explain--animate');
+    if (this._element) {
+      this._element.classList.remove('explain--animate');
+      void this._element.offsetWidth; // reflow
+      this._element.classList.add('explain--animate');
+    }
 
-    const controlsContainer = this._element.querySelector('#explain-controls');
-    if (opKey === 'default' || !this._tutorialManager || !this._tutorialManager.isTutorialMode) {
-      controlsContainer.style.display = 'none';
+    const controlsContainer = this._element ? this._element.querySelector('#explain-controls') : null;
+    if (controlsContainer) {
+      if (opKey === 'default' || !this._tutorialManager || !this._tutorialManager.isTutorialMode) {
+        controlsContainer.style.display = 'none';
+      } else {
+        controlsContainer.style.display = 'flex';
+      }
     }
   }
 
@@ -217,12 +225,15 @@ export class ExplanationPanel {
    * @param {string} description
    */
   updateStep(description) {
+    if (!this._element) return;
     const textEl = this._element.querySelector('#explain-text');
-    textEl.textContent = description;
-    textEl.classList.add('explain__text--highlight');
-    setTimeout(() => textEl.classList.remove('explain__text--highlight'), 500);
+    if (textEl) {
+      textEl.textContent = description;
+      textEl.classList.add('explain__text--highlight');
+      setTimeout(() => textEl.classList.remove('explain__text--highlight'), 500);
+    }
   }
 
-  show() { this._element.style.display = 'flex'; }
-  hide() { this._element.style.display = 'none'; }
+  show() { if (this._element) this._element.style.display = 'flex'; }
+  hide() { if (this._element) this._element.style.display = 'none'; }
 }

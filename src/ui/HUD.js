@@ -29,7 +29,10 @@ export class HUD {
    * Refresh the HUD with current vector data.
    */
   refresh() {
+    if (!this._element) return;
     const container = this._element.querySelector('#hud-vectors');
+    if (!container) return;
+    
     const vectors = this._factory.getAll();
     const baseVectors = vectors.filter(v => v.name === 'p' || v.name === 'q');
 
@@ -48,6 +51,6 @@ export class HUD {
     }).join('');
   }
 
-  show() { this._element.style.display = 'flex'; }
-  hide() { this._element.style.display = 'none'; }
+  show() { if (this._element) this._element.style.display = 'flex'; }
+  hide() { if (this._element) this._element.style.display = 'none'; }
 }
