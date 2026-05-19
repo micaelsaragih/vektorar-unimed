@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VektorAR — Matematika Vektor 3D Interaktif</title>
+    <meta
+      name="description"
+      content="Platform edukasi WebAR interaktif untuk visualisasi matematika vektor 3D. Pelajari operasi vektor dalam augmented reality."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Fonts: Inter & Poppins for Academic UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="loading__content">
+        <img src="/foto/logounimed.png" alt="UNIMED" class="loading__logo" onerror="this.style.display='none'" />
+        <h1 class="loading__title">Laboratorium Vektor 3D</h1>
+        <div class="loading__bar-container">
+          <div class="loading__bar" id="loading-bar"></div>
+        </div>
+        <p class="loading__text" id="loading-text">Memuat Engine WebGL...</p>
+      </div>
+    </div>
+
+    <!-- Header Branding -->
+  <header id="app-header">
+    <div class="header__brand">
+      <div class="header__logo-container">
+        <img src="/foto/logounimed.png" alt="Logo UNIMED" class="header__logo-img" />
+        <div class="header__text">
+          <div class="header__logo">UNIMED</div>
+          <div class="header__title">Laboratorium Matematika Vektor 3D</div>
+        </div>
+      </div>
+    </div>
+    <div class="header__actions" style="margin-left: 1.5rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 1.5rem;">
+      <button id="btn-presentation" title="Mode Presentasi (Esc untuk keluar)" class="header__btn-presentation">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="opacity: 0.8;">
+          <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+        </svg>
+        <span>Presentasi</span>
+      </button>
+    </div>
+  </header>
+
+    <!-- AR DOM Overlay (shown during AR sessions) -->
+    <div id="overlay-content">
+      <div id="ar-info-panel">
+        <h2>Sistem Vektor AR</h2>
+        <p>Ketuk permukaan untuk menempatkan sistem koordinat.</p>
+      </div>
+    </div>
+
+    <!-- Main application script -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
